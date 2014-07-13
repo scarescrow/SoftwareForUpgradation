@@ -1,4 +1,0 @@
-1. Maintain consistency while writing branch. Follow Pattern: <B.Tech (<branch>) - 2nd Shift(Only if present)>
-2. Ensure percentage is not blank for any candidate
-
-//Add toLowerCase where required
