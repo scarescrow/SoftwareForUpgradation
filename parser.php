@@ -88,6 +88,8 @@
 			$student['branch'] = mysql_result($result, $j, "Branch");
 			$student['college'] = $college;
 			$student['name'] = mysql_result($result, $j, "Name");
+			$student['parent'] = mysql_result($result, $j, "Parent_Name");
+			$student['percentage'] = mysql_result($result, $j, "Percentage");
 			$student['pref1'] = mysql_result($result, $j, "Pref1");
 			$student['pref2'] = mysql_result($result, $j, "Pref2");
 			$student['pref3'] = mysql_result($result, $j, "Pref3");
@@ -107,8 +109,10 @@
 				$old_branch = $arr_of_students[$c]['branch'];
 				$new_branch = $arr_of_students[$c]['new_branch'];
 				$name = $arr_of_students[$c]['name'];
-				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Institute, Branch_Old, Branch_New)
-									VALUES ('$roll', '$name', '$college', '$old_branch', '$new_branch');";
+				$parent = $arr_of_students[$c]['parent'];
+				$percentage = $arr_of_students[$c]['percentage'];
+				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Parent_Name, Institute, Branch_Old, Branch_New, Percentage)
+									VALUES ('$roll', '$name', '$parent', '$college', '$old_branch', '$new_branch', '$percentage');";
 									
 				$result_final = mysql_query($query_final) or die(mysql_error());
 			
