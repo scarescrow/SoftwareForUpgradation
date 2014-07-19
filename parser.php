@@ -2,6 +2,8 @@
 
 	//Connect to database
 	include 'connection.php';
+	
+	error_reporting(0);
 
 	/*
 
@@ -54,23 +56,24 @@
 	
 	//Next get all branches and allowed upgradations, and put in array at appropriate position.
 
-	$query_branch = "SELECT College, Branch, No_Allowed, Permissible_Limit FROM upgradation_college";
+	$query_branch = "SELECT College, Branch, No_Allowed, Permissible_Limit, Sample_Roll_No FROM upgradation_college";
 	$result = mysql_query($query_branch);
 	$num_rows = mysql_num_rows($result);
 
 	for($i = 0; $i < $num_rows; $i++) {
 
-		$arr_of_colleges[mysql_result($result, $i, "College")][mysql_result($result, $i, "Branch")] = Array(intval(mysql_result($result, $i, "No_Allowed")),intval(mysql_result($result, $i, "Permissible_Limit"))) ;
+		$arr_of_colleges[mysql_result($result, $i, "College")][mysql_result($result, $i, "Branch")] = Array(intval(mysql_result($result, $i, "No_Allowed")), intval(mysql_result($result, $i, "Permissible_Limit")), mysql_result($result, $i, "Sample_Roll_No"), 0) ;
 
 	}
 	
 	//Now, we have all colleges. So, first we iterate over all colleges.
-
+	
 	$colleges = array_keys($arr_of_colleges);
 	for($i = 0;$i < count($colleges); $i++) {	//count($colleges)
-
-		$college = $colleges[$i];
+		//if($i == 15) {
 		
+		$college = $colleges[$i];
+		//echo $college;
 		$diff = 1;
 		//Now, get all students from this college in descending order.
 		$query_students = "SELECT * FROM upgradation_final WHERE Institute='$college' ORDER BY Percentage DESC";
@@ -95,6 +98,7 @@
 			$student['pref3'] = mysql_result($result, $j, "Pref3");
 			$student['pref4'] = mysql_result($result, $j, "Pref4");
 			$student['new_branch'] = "";
+			$student['new_roll_no'] = "";
 			
 			$arr_of_students[] = $student;
 		
@@ -111,8 +115,9 @@
 				$name = $arr_of_students[$c]['name'];
 				$parent = $arr_of_students[$c]['parent'];
 				$percentage = $arr_of_students[$c]['percentage'];
-				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Parent_Name, Institute, Branch_Old, Branch_New, Percentage)
-									VALUES ('$roll', '$name', '$parent', '$college', '$old_branch', '$new_branch', '$percentage');";
+				$new_roll = $arr_of_students[$c]['new_roll_no'];
+				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Parent_Name, Institute, Branch_Old, Branch_New, Percentage, New_Enrollment_No)
+									VALUES ('$roll', '$name', '$parent', '$college', '$old_branch', '$new_branch', '$percentage', '$new_roll');";
 									
 				$result_final = mysql_query($query_final) or die(mysql_error());
 			
@@ -123,7 +128,9 @@
 		}	
 		
 		
-	}
+	}//}
+	
+	
 	
 	
 	
@@ -156,21 +163,21 @@
 				
 			} else if ($pref2 != '--' && $pref2 != $pref1 && $pref2 != $branch) {
 			
-				if ($arr_of_colleges[$college][$pref2][0] > 0) {
+				if ($arr_of_colleges[$college][$pref2][0] > 0 && $arr_of_students[$k]['new_branch'] != $pref1) {
 				
 					$found = true;
 					$new_branch = $pref2;
 				
 				} else if ($pref3 != '--' && $pref3 != $pref2 && $pref3 != $branch) {
 				
-					if ($arr_of_colleges[$college][$pref3][0] > 0) {
+					if ($arr_of_colleges[$college][$pref3][0] > 0 && $arr_of_students[$k]['new_branch'] != $pref1 && $arr_of_students[$k]['new_branch'] != $pref2) {
 					
 						$found = true;
 						$new_branch = $pref3;
 					
 					} else if ($pref4 != '--' && $pref4 != $pref3 && $pref4 != $branch) {
 					
-						if($arr_of_colleges[$college][$pref4][0] > 0) {
+						if($arr_of_colleges[$college][$pref4][0] > 0 && $arr_of_students[$k]['new_branch'] != $pref1 && $arr_of_students[$k]['new_branch'] != $pref2 && $arr_of_students[$k]['new_branch'] != $pref3) {
 
 							$found = true;
 							$new_branch = $pref4;
@@ -187,13 +194,21 @@
 			
 				if($arr_of_students[$k]["new_branch"] != $new_branch) {
 				
-					if(strlen($arr_of_students[$k]["new_branch"] >= 2))						
+					if(strlen($arr_of_students[$k]["new_branch"] >= 2))	{					
+						
 						$branch = $arr_of_students[$k]["new_branch"];
+						$arr_of_colleges[$college][$branch][2] = change($arr_of_colleges[$college][$branch][2], 0);
 					
-					$arr_of_colleges[$college][$branch][0] += 1;
+					}
+					
+					if ($arr_of_colleges[$college][$branch][0] < $arr_of_colleges[$college][$branch][1])
+						$arr_of_colleges[$college][$branch][0] += 1;
 					$arr_of_colleges[$college][$new_branch][0] -= 1;
+					$arr_of_colleges[$college][$new_branch][1] -= 1;
+					$arr_of_students[$k]["new_roll_no"] = $arr_of_colleges[$college][$new_branch][2];
 					
 					$arr_of_students[$k]["new_branch"] = $new_branch;
+					$arr_of_colleges[$college][$new_branch][2] = change($arr_of_colleges[$college][$new_branch][2], 1);
 					
 					$arr_of_students = parse($arr_of_students, $k);
 					
@@ -216,8 +231,61 @@
 		$str = str_replace("/", "", $str);
 		$str = str_replace("\\", "", $str);
 		$str = str_replace(" ", "", $str);
-		
+		if($str != '--')
+			$str = str_replace("-", "", $str);
 		return $str;
+	}
+	
+	function change($str, $code) {
+	
+		if(strlen($str) < 3)
+			echo strlen($str);
+		if ($code == 1) {
+		
+			if($str[0] == "0") {
+			
+				$no = strval(intval(substr($str, 1, 2)) + 1);
+				$str[1] = $no[0];
+				$str[2] = $no[1];
+			
+			} else {
+			
+				$no = strval(intval(substr($str, 0, 2)) + 1);
+				$str[0] = $no[0];
+				$str[1] = $no[1];
+				$str[2] = $no[2];
+			
+			}
+		
+		} else {
+		
+			if($str[0] == "0") {
+			
+				$no = strval(intval(substr($str, 1, 2)) - 1);
+				$str[1] = $no[0];
+				$str[2] = $no[1];
+			
+			} else {
+			
+				$no = strval(intval(substr($str, 0, 2)) - 1);
+				$str[0] = $no[0];
+				$str[1] = $no[1];
+				$str[2] = $no[2];
+			
+			}
+		
+		}
+		return $str;
+	
 	}
 
 ?>
+
+<html>
+<head>
+<title>Results Declared</title>
+</head>
+<body>
+The upgradation process has been done. <br><br><a href="converter.php">Click Here</a> To Download Excel File.
+</body>
+</html>
