@@ -70,7 +70,7 @@
 	
 	$colleges = array_keys($arr_of_colleges);
 	for($i = 0;$i < count($colleges); $i++) {	//count($colleges)
-		//if($i == 15) {
+		//if($i == 2) {
 		
 		$college = $colleges[$i];
 		//echo $college;
@@ -103,6 +103,7 @@
 			$arr_of_students[] = $student;
 		
 		}
+		//print_r($arr_of_colleges);
 		$arr_of_students = parse($arr_of_students, count($arr_of_students));	
 		
 		for($c = 0; $c < count($arr_of_students); $c++) {
@@ -115,7 +116,10 @@
 				$name = $arr_of_students[$c]['name'];
 				$parent = $arr_of_students[$c]['parent'];
 				$percentage = $arr_of_students[$c]['percentage'];
-				$new_roll = $arr_of_students[$c]['new_roll_no'];
+				$new_roll = strval($arr_of_colleges[$college][$new_branch][2]);
+				$arr_of_colleges[$college][$new_branch][2] = increment($arr_of_colleges[$college][$new_branch][2]);
+				echo $college.','.$name.','.$new_branch.','.$new_roll.'<br>';
+				
 				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Parent_Name, Institute, Branch_Old, Branch_New, Percentage, New_Enrollment_No)
 									VALUES ('$roll', '$name', '$parent', '$college', '$old_branch', '$new_branch', '$percentage', '$new_roll');";
 									
@@ -126,6 +130,9 @@
 			
 	
 		}	
+		
+		echo '<br><br>';
+		//print_r($arr_fo_colleges);
 		
 		
 	}//}
@@ -197,18 +204,16 @@
 					if(strlen($arr_of_students[$k]["new_branch"] >= 2))	{					
 						
 						$branch = $arr_of_students[$k]["new_branch"];
-						$arr_of_colleges[$college][$branch][2] = change($arr_of_colleges[$college][$branch][2], 0);
-					
+						
 					}
 					
 					if ($arr_of_colleges[$college][$branch][0] < $arr_of_colleges[$college][$branch][1])
 						$arr_of_colleges[$college][$branch][0] += 1;
 					$arr_of_colleges[$college][$new_branch][0] -= 1;
 					$arr_of_colleges[$college][$new_branch][1] -= 1;
-					$arr_of_students[$k]["new_roll_no"] = $arr_of_colleges[$college][$new_branch][2];
+					
 					
 					$arr_of_students[$k]["new_branch"] = $new_branch;
-					$arr_of_colleges[$college][$new_branch][2] = change($arr_of_colleges[$college][$new_branch][2], 1);
 					
 					$arr_of_students = parse($arr_of_students, $k);
 					
@@ -236,46 +241,26 @@
 		return $str;
 	}
 	
-	function change($str, $code) {
+	function increment($str) {
 	
 		if(strlen($str) < 3)
 			echo strlen($str);
-		if ($code == 1) {
+		$second_half = substr($str, 3, 8);
 		
-			if($str[0] == "0") {
-			
-				$no = strval(intval(substr($str, 1, 2)) + 1);
-				$str[1] = $no[0];
-				$str[2] = $no[1];
-			
-			} else {
-			
-				$no = strval(intval(substr($str, 0, 2)) + 1);
-				$str[0] = $no[0];
-				$str[1] = $no[1];
-				$str[2] = $no[2];
-			
-			}
+		$no = strval(intval(substr($str, 0, 3)) + 1);
+		
+		if(strlen($no) == 2) {
+		
+			$first_half = '0'.$no;
 		
 		} else {
 		
-			if($str[0] == "0") {
-			
-				$no = strval(intval(substr($str, 1, 2)) - 1);
-				$str[1] = $no[0];
-				$str[2] = $no[1];
-			
-			} else {
-			
-				$no = strval(intval(substr($str, 0, 2)) - 1);
-				$str[0] = $no[0];
-				$str[1] = $no[1];
-				$str[2] = $no[2];
-			
-			}
+			$first_half = $no;
 		
 		}
-		return $str;
+		
+		$new_str = $first_half.$second_half;
+		return $new_str;
 	
 	}
 
