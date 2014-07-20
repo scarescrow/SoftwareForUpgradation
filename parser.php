@@ -56,13 +56,13 @@
 	
 	//Next get all branches and allowed upgradations, and put in array at appropriate position.
 
-	$query_branch = "SELECT College, Branch, No_Allowed, Permissible_Limit, Sample_Roll_No FROM upgradation_college";
+	$query_branch = "SELECT * FROM upgradation_college";
 	$result = mysql_query($query_branch);
 	$num_rows = mysql_num_rows($result);
 
 	for($i = 0; $i < $num_rows; $i++) {
 
-		$arr_of_colleges[mysql_result($result, $i, "College")][mysql_result($result, $i, "Branch")] = Array(intval(mysql_result($result, $i, "No_Allowed")), intval(mysql_result($result, $i, "Permissible_Limit")), mysql_result($result, $i, "Sample_Roll_No"), 0) ;
+		$arr_of_colleges[mysql_result($result, $i, "College")][mysql_result($result, $i, "Branch")] = Array(intval(mysql_result($result, $i, "No_Allowed")), intval(mysql_result($result, $i, "Permissible_Limit")), mysql_result($result, $i, "Sample_Roll_No"), mysql_result($result, $i, "Total_Vacancy"), 0) ;
 
 	}
 	
@@ -118,12 +118,14 @@
 				$percentage = $arr_of_students[$c]['percentage'];
 				$new_roll = strval($arr_of_colleges[$college][$new_branch][2]);
 				$arr_of_colleges[$college][$new_branch][2] = increment($arr_of_colleges[$college][$new_branch][2]);
-				echo $college.','.$name.','.$new_branch.','.$new_roll.'<br>';
 				
 				$query_final = "INSERT INTO upgradation_result (Roll_No, Name, Parent_Name, Institute, Branch_Old, Branch_New, Percentage, New_Enrollment_No)
 									VALUES ('$roll', '$name', '$parent', '$college', '$old_branch', '$new_branch', '$percentage', '$new_roll');";
 									
 				$result_final = mysql_query($query_final) or die(mysql_error());
+				
+				$arr_of_colleges[$college][$new_branch][4] += 1;
+				$arr_of_colleges[$college][$old_branch][3] += 1;
 			
 			}
 			
@@ -131,11 +133,10 @@
 	
 		}	
 		
-		echo '<br><br>';
-		//print_r($arr_fo_colleges);
-		
+		//print_r($arr_fo_colleges);	
 		
 	}//}
+	update_colleges();
 	
 	
 	
@@ -263,6 +264,34 @@
 		return $new_str;
 	
 	}
+	
+	function update_colleges() {
+	
+		global $arr_of_colleges;
+		$colleges = array_keys($arr_of_colleges);
+		for($i = 0; $i < count($colleges); $i ++) {
+		
+			$college = $colleges[$i];
+			$branches = array_keys($arr_of_colleges[$college]);
+			
+			for($j = 0; $j < count($branches); $j ++) {
+			
+				$branch = $branches[$j];
+				$no_allotted = $arr_of_colleges[$college][$branch][4];
+				$total_vacancy = $arr_of_colleges[$college][$branch][3];				
+				$new_roll = $arr_of_colleges[$college][$branch][2];
+				
+				$remaining_vacancy = $total_vacancy - $no_allotted;
+				
+				$query = "UPDATE upgradation_college SET No_Allotted = '$no_allotted', No_Vacant = '$remaining_vacancy', New_Sample_Roll_No = '$new_roll' WHERE College='$college' AND Branch = '$branch'";
+				
+				mysql_query($query) or die(mysql_error());
+			
+			}
+		
+		}
+	
+	}
 
 ?>
 
@@ -271,6 +300,6 @@
 <title>Results Declared</title>
 </head>
 <body>
-The upgradation process has been done. <br><br><a href="converter.php">Click Here</a> To Download Excel File.
+The upgradation process has been done. <br><br><a href="display.php">Click Here</a> To Generate Excel File.
 </body>
 </html>
